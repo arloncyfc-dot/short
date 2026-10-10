@@ -1,0 +1,230 @@
+<?php
+/**
+ * Template Konfigurasi Database - LinkPendek URL Shortener
+ * 
+ * CARA PENGGUNAAN:
+ * 1. Copy file ini menjadi config.php
+ * 2. Ubah nilai sesuai dengan database Anda
+ * 3. Pastikan MySQL/MariaDB sudah berjalan
+ * 
+ * cp config.php.example config.php
+ */
+
+// =====================================================
+// KONFIGURASI DATABASE - WAJIB DIUBAH
+// =====================================================
+define('DB_HOST', 'localhost');        // Host database (biasanya localhost)
+define('DB_NAME', 'linkpendek_db');    // Nama database
+define('DB_USER', 'root');             // Username database
+define('DB_PASS', '');                 // Password database (GANTI INI!)
+define('DB_CHARSET', 'utf8mb4');       // Charset database
+
+// =====================================================
+// KONFIGURASI APLIKASI - WAJIB DIUBAH
+// =====================================================
+define('APP_NAME', 'LinkPendek');
+define('APP_URL', 'http://localhost:8000');  // URL aplikasi Anda (GANTI INI!)
+define('SHORT_DOMAIN', 'lnk.pd');            // Domain untuk link pendek (GANTI INI!)
+define('APP_SECRET', 'CHANGE-THIS-TO-RANDOM-STRING-AT-LEAST-32-CHARS'); // GANTI INI!
+
+// Generate random string dengan perintah:
+// php -r "echo bin2hex(random_bytes(32)) . PHP_EOL;"
+
+// =====================================================
+// KONFIGURASI JWT (untuk autentikasi API)
+// =====================================================
+define('JWT_SECRET', 'CHANGE-THIS-TO-ANOTHER-RANDOM-STRING');
+define('JWT_EXPIRY', 86400); // 24 jam dalam detik
+
+// =====================================================
+// KONFIGURASI LIMIT PER PAKET
+// =====================================================
+$PLAN_LIMITS = [
+    'free' => [
+        'max_links' => 50,
+        'max_clicks' => -1, // unlimited
+        'custom_alias' => false,
+        'qr_code' => false,
+        'analytics' => true,
+        'api_access' => false,
+        'link_expiry_days' => 30,
+    ],
+    'premium' => [
+        'max_links' => 500,
+        'max_clicks' => -1,
+        'custom_alias' => true,
+        'qr_code' => true,
+        'analytics' => true,
+        'api_access' => false,
+        'link_expiry_days' => 365,
+    ],
+    'business' => [
+        'max_links' => 99999,
+        'max_clicks' => -1,
+        'custom_alias' => true,
+        'qr_code' => true,
+        'analytics' => true,
+        'api_access' => true,
+        'link_expiry_days' => 0, // selamanya
+    ],
+];
+
+// =====================================================
+// KONEKSI DATABASE (PDO)
+// =====================================================
+class Database {
+    private static $instance = null;
+    private $pdo;
+
+    private function __construct() {
+        try {
+            $dsn = "mysql:host=" . DB_HOST . ";dbname=" . DB_NAME . ";charset=" . DB_CHARSET;
+            $options = [
+                PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
+                PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
+                PDO::ATTR_EMULATE_PREPARES => false,
+                PDO::MYSQL_ATTR_INIT_COMMAND => "SET NAMES " . DB_CHARSET,
+            ];
+            
+            $this->pdo = new PDO($dsn, DB_USER, DB_PASS, $options);
+        } catch (PDOException $e) {
+            http_response_code(500);
+            die(json_encode([
+                'success' => false,
+                'message' => 'Koneksi database gagal: ' . $e->getMessage()
+            ]));
+        }
+    }
+
+    public static function getInstance() {
+        if (self::$instance === null) {
+            self::$instance = new self();
+        }
+        return self::$instance;
+    }
+
+    public function getConnection() {
+        return $this->pdo;
+    }
+
+    // Prevent cloning
+    private function __clone() {}
+}
+
+// Fungsi helper untuk mendapatkan koneksi
+function getDB() {
+    return Database::getInstance()->getConnection();
+}
+
+// =====================================================
+// CORS Headers (untuk API)
+// =====================================================
+header('Content-Type: application/json; charset=utf-8');
+header('Access-Control-Allow-Origin: *');
+header('Access-Control-Allow-Methods: GET, POST, PUT, DELETE, OPTIONS');
+header('Access-Control-Allow-Headers: Content-Type, Authorization');
+
+// Handle preflight request
+if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
+    http_response_code(200);
+    exit();
+}
+
+// =====================================================
+// FUNGSI HELPER
+// =====================================================
+
+// Generate random string
+function generateRandomString($length = 6) {
+    $chars = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+    $result = '';
+    for ($i = 0; $i < $length; $i++) {
+        $result .= $chars[random_int(0, strlen($chars) - 1)];
+    }
+    return $result;
+}
+
+// Generate short code yang unik
+function generateShortCode($length = 6) {
+    $db = getDB();
+    do {
+        $code = generateRandomString($length);
+        $stmt = $db->prepare("SELECT id FROM urls WHERE short_code = ?");
+        $stmt->execute([$code]);
+    } while ($stmt->fetch());
+    
+    return $code;
+}
+
+// Validasi URL
+function isValidUrl($url) {
+    return filter_var($url, FILTER_VALIDATE_URL) !== false;
+}
+
+// Hash password
+function hashPassword($password) {
+    return password_hash($password, PASSWORD_BCRYPT);
+}
+
+// Verifikasi password
+function verifyPassword($password, $hash) {
+    return password_verify($password, $hash);
+}
+
+// Get client IP
+function getClientIP() {
+    if (!empty($_SERVER['HTTP_CLIENT_IP'])) {
+        return $_SERVER['HTTP_CLIENT_IP'];
+    } elseif (!empty($_SERVER['HTTP_X_FORWARDED_FOR'])) {
+        return $_SERVER['HTTP_X_FORWARDED_FOR'];
+    }
+    return $_SERVER['REMOTE_ADDR'] ?? '0.0.0.0';
+}
+
+// Get user agent
+function getUserAgent() {
+    return $_SERVER['HTTP_USER_AGENT'] ?? 'Unknown';
+}
+
+// Detect device type
+function detectDeviceType($userAgent) {
+    if (preg_match('/Mobile|Android|iPhone/i', $userAgent)) {
+        return 'mobile';
+    } elseif (preg_match('/Tablet|iPad/i', $userAgent)) {
+        return 'tablet';
+    }
+    return 'desktop';
+}
+
+// Detect browser
+function detectBrowser($userAgent) {
+    if (preg_match('/Chrome/i', $userAgent)) return 'Chrome';
+    if (preg_match('/Firefox/i', $userAgent)) return 'Firefox';
+    if (preg_match('/Safari/i', $userAgent)) return 'Safari';
+    if (preg_match('/Edge/i', $userAgent)) return 'Edge';
+    if (preg_match('/Opera/i', $userAgent)) return 'Opera';
+    return 'Other';
+}
+
+// Detect OS
+function detectOS($userAgent) {
+    if (preg_match('/Windows/i', $userAgent)) return 'Windows';
+    if (preg_match('/Mac/i', $userAgent)) return 'macOS';
+    if (preg_match('/Linux/i', $userAgent)) return 'Linux';
+    if (preg_match('/Android/i', $userAgent)) return 'Android';
+    if (preg_match('/iOS|iPhone|iPad/i', $userAgent)) return 'iOS';
+    return 'Other';
+}
+
+// Response JSON
+function jsonResponse($data, $statusCode = 200) {
+    http_response_code($statusCode);
+    echo json_encode($data, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE);
+    exit();
+}
+
+// Get JSON input
+function getJsonInput() {
+    $input = file_get_contents('php://input');
+    return json_decode($input, true) ?? [];
+}
