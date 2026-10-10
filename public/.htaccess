@@ -1,5 +1,9 @@
-# .htaccess - URL Shortener Routing
-# Letakkan file ini di root directory web server
+# =====================================================
+# LINKPENDEK URL SHORTENER - Apache Configuration
+# =====================================================
+# File: .htaccess
+# Letakkan file ini di folder public/
+# =====================================================
 
 RewriteEngine On
 RewriteBase /
@@ -21,9 +25,8 @@ RewriteCond %{REQUEST_URI} !^/dist/
 RewriteRule ^([a-zA-Z0-9]{4,10})$ api/urls.php?action=redirect&code=$1 [L,QSA]
 
 # =====================================================
-# API ROUTING
+# API ROUTING (opsional - untuk clean URL)
 # =====================================================
-# Jika ingin clean URL untuk API (opsional)
 # RewriteRule ^api/shorten$ api/urls.php?action=shorten [L,QSA]
 # RewriteRule ^api/urls$ api/urls.php?action=list [L,QSA]
 # RewriteRule ^api/auth/login$ api/auth.php?action=login [L,QSA]
@@ -55,6 +58,9 @@ Options -Indexes
     Header set Referrer-Policy "strict-origin-when-cross-origin"
 </IfModule>
 
+# =====================================================
+# PERFORMANCE
+# =====================================================
 # Compression
 <IfModule mod_deflate.c>
     AddOutputFilterByType DEFLATE text/html text/plain text/xml text/css text/javascript application/javascript application/json

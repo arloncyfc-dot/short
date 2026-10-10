@@ -1,10 +1,13 @@
 -- =====================================================
--- DATABASE URL SHORTENER - LinkPendek
--- Bahasa: MySQL / MariaDB
--- Versi: 1.0
+-- LINKPENDEK URL SHORTENER - DATABASE SCHEMA
+-- Versi: 1.0.0
+-- Database: MySQL 5.7+ / MariaDB 10.3+
 -- =====================================================
 
--- 1. Buat Database
+-- Hapus database jika sudah ada (opsional)
+-- DROP DATABASE IF EXISTS linkpendek_db;
+
+-- Buat database baru
 CREATE DATABASE IF NOT EXISTS linkpendek_db
   CHARACTER SET utf8mb4
   COLLATE utf8mb4_unicode_ci;
@@ -12,13 +15,13 @@ CREATE DATABASE IF NOT EXISTS linkpendek_db
 USE linkpendek_db;
 
 -- =====================================================
--- 2. Tabel Users (Pengguna)
+-- TABEL 1: users (Data Pengguna)
 -- =====================================================
-CREATE TABLE IF NOT EXISTS users (
+CREATE TABLE users (
   id INT AUTO_INCREMENT PRIMARY KEY,
   name VARCHAR(100) NOT NULL,
   email VARCHAR(150) NOT NULL UNIQUE,
-  password VARCHAR(255) NOT NULL,
+  password VARCHAR(255) NOT NULL COMMENT 'Bcrypt hashed password',
   plan ENUM('free', 'premium', 'business') DEFAULT 'free',
   plan_expired_at DATETIME DEFAULT NULL,
   api_key VARCHAR(64) DEFAULT NULL UNIQUE,
@@ -31,14 +34,14 @@ CREATE TABLE IF NOT EXISTS users (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- =====================================================
--- 3. Tabel URLs (Link yang dipersingkat)
+-- TABEL 2: urls (Link yang Dipersingkat)
 -- =====================================================
-CREATE TABLE IF NOT EXISTS urls (
+CREATE TABLE urls (
   id INT AUTO_INCREMENT PRIMARY KEY,
   user_id INT DEFAULT NULL,
   short_code VARCHAR(10) NOT NULL UNIQUE,
   original_url TEXT NOT NULL,
-  custom_alias VARCHAR(50) DEFAULT NULL,
+  custom_alias VARCHAR(50) DEFAULT NULL UNIQUE,
   title VARCHAR(255) DEFAULT NULL,
   clicks INT DEFAULT 0,
   is_active TINYINT(1) DEFAULT 1,
@@ -56,9 +59,9 @@ CREATE TABLE IF NOT EXISTS urls (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- =====================================================
--- 4. Tabel Clicks (Log klik untuk analitik)
+-- TABEL 3: clicks (Log Klik untuk Analitik)
 -- =====================================================
-CREATE TABLE IF NOT EXISTS clicks (
+CREATE TABLE clicks (
   id BIGINT AUTO_INCREMENT PRIMARY KEY,
   url_id INT NOT NULL,
   ip_address VARCHAR(45) DEFAULT NULL,
@@ -77,9 +80,9 @@ CREATE TABLE IF NOT EXISTS clicks (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- =====================================================
--- 5. Tabel Plans (Paket langganan)
+-- TABEL 4: plans (Paket Langganan)
 -- =====================================================
-CREATE TABLE IF NOT EXISTS plans (
+CREATE TABLE plans (
   id INT AUTO_INCREMENT PRIMARY KEY,
   name VARCHAR(50) NOT NULL,
   slug VARCHAR(50) NOT NULL UNIQUE,
@@ -98,9 +101,9 @@ CREATE TABLE IF NOT EXISTS plans (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- =====================================================
--- 6. Tabel Payments (Pembayaran)
+-- TABEL 5: payments (Riwayat Pembayaran)
 -- =====================================================
-CREATE TABLE IF NOT EXISTS payments (
+CREATE TABLE payments (
   id INT AUTO_INCREMENT PRIMARY KEY,
   user_id INT NOT NULL,
   plan_id INT NOT NULL,
@@ -117,9 +120,9 @@ CREATE TABLE IF NOT EXISTS payments (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- =====================================================
--- 7. Tabel Settings (Pengaturan aplikasi)
+-- TABEL 6: settings (Pengaturan Aplikasi)
 -- =====================================================
-CREATE TABLE IF NOT EXISTS settings (
+CREATE TABLE settings (
   id INT AUTO_INCREMENT PRIMARY KEY,
   setting_key VARCHAR(100) NOT NULL UNIQUE,
   setting_value TEXT DEFAULT NULL,
@@ -128,7 +131,7 @@ CREATE TABLE IF NOT EXISTS settings (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- =====================================================
--- 8. Data Awal - Paket Langganan
+-- DATA AWAL: Paket Langganan
 -- =====================================================
 INSERT INTO plans (name, slug, price_monthly, price_yearly, max_links, custom_alias, qr_code, analytics, api_access, custom_domain, priority_support) VALUES
 ('Gratis', 'free', 0.00, 0.00, 50, 0, 0, 1, 0, 0, 0),
@@ -136,7 +139,7 @@ INSERT INTO plans (name, slug, price_monthly, price_yearly, max_links, custom_al
 ('Bisnis', 'business', 149000.00, 1490000.00, 99999, 1, 1, 1, 1, 1, 1);
 
 -- =====================================================
--- 9. Data Awal - Pengaturan Aplikasi
+-- DATA AWAL: Pengaturan Aplikasi
 -- =====================================================
 INSERT INTO settings (setting_key, setting_value, description) VALUES
 ('site_name', 'LinkPendek', 'Nama situs'),
@@ -151,17 +154,17 @@ INSERT INTO settings (setting_key, setting_value, description) VALUES
 ('registration_enabled', '1', 'Izinkan pendaftaran (0/1)');
 
 -- =====================================================
--- 10. Data Contoh - User Admin (password: admin123)
--- Password di-hash menggunakan bcrypt
+-- DATA AWAL: User Admin
+-- Password: admin123 (sudah di-hash dengan bcrypt)
 -- =====================================================
 INSERT INTO users (name, email, password, plan, api_key) VALUES
 ('Administrator', 'admin@linkpendek.id', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2u6S1OxQKye', 'business', 'lp_admin_api_key_2024');
 
 -- =====================================================
--- 11. Stored Procedure - Auto cleanup expired links
+-- STORED PROCEDURE: Cleanup Link Expired
 -- =====================================================
 DELIMITER //
-CREATE PROCEDURE IF NOT EXISTS cleanup_expired_links()
+CREATE PROCEDURE cleanup_expired_links()
 BEGIN
   UPDATE urls 
   SET is_active = 0 
@@ -172,7 +175,7 @@ END //
 DELIMITER ;
 
 -- =====================================================
--- 12. Event Scheduler - Jalankan cleanup setiap hari
+-- EVENT SCHEDULER: Jalankan cleanup setiap hari
 -- =====================================================
 SET GLOBAL event_scheduler = ON;
 
@@ -185,3 +188,8 @@ DO
 -- =====================================================
 -- SELESAI! Database siap digunakan.
 -- =====================================================
+
+-- Verifikasi instalasi:
+-- SHOW TABLES;
+-- SELECT * FROM plans;
+-- SELECT * FROM users WHERE email = 'admin@linkpendek.id';

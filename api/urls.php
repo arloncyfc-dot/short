@@ -1,7 +1,18 @@
 <?php
 /**
- * API URL Shortener - Persingkat, Redirect, dan Analytics
- * Endpoint: POST /api/urls.php
+ * =====================================================
+ * LINKPENDEK URL SHORTENER - API URL Shortener
+ * =====================================================
+ * File: urls.php
+ * Endpoint: /api/urls.php
+ * 
+ * Actions:
+ * - shorten: Persingkat URL
+ * - list: List URL user (butuh token)
+ * - delete: Hapus URL (butuh token)
+ * - stats: Get statistik URL (butuh token)
+ * - redirect: Redirect short link (public)
+ * =====================================================
  */
 
 require_once __DIR__ . '/config.php';
@@ -368,7 +379,7 @@ function redirectUrl() {
 }
 
 /**
- * Autentikasi user (sama seperti di auth.php)
+ * Autentikasi user
  */
 function authenticateUser() {
     $headers = getallheaders();

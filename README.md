@@ -1,111 +1,106 @@
-# 🚀 QUICK START GUIDE - LinkPendek URL Shortener
+# 🚀 LINKPENDEK - URL Shortener
 
-## ⚡ Setup Cepat (5 Menit)
+**Aplikasi URL Shortener modern dengan PHP MySQL, bilingual (ID/EN), mobile-friendly, dengan fitur Gratis & Langganan**
 
-### 1️⃣ Persiapan Database
+---
+
+## 📦 ISI PAKET
+
+```
+linkpendek/
+├── 📁 database/
+│   └── schema.sql              ← Import ke MySQL
+├── 📁 api/
+│   ├── config.php              ← Konfigurasi database
+│   ├── config.php.example      ← Template config
+│   ├── auth.php                ← API Register/Login
+│   ├── urls.php                ← API URL Shortener
+│   └── payment.php             ← API Pembayaran
+├── 📁 public/
+│   └── .htaccess               ← URL Routing
+├── 📁 src/
+│   ├── App.tsx                 ← Frontend React
+│   ├── i18n.ts                 ← Translations
+│   ├── index.css               ← Styles
+│   └── main.tsx                ← Entry point
+├── 📄 index.html
+├── 📄 package.json
+├── 📄 .env.example
+└── 📄 README.md                ← File ini
+```
+
+---
+
+## ⚡ QUICK START (5 Menit)
+
+### 1️⃣ Setup Database
 
 ```bash
 # Login ke MySQL
 mysql -u root -p
 
-# Buat database dan import schema
+# Import database
 CREATE DATABASE linkpendek_db CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 USE linkpendek_db;
 SOURCE database/schema.sql;
 
 # Verifikasi
 SHOW TABLES;
-# Output: clicks, payments, plans, settings, urls, users
 ```
 
-### 2️⃣ Konfigurasi
+### 2️⃣ Konfigurasi Backend
 
-Edit file `api/config.php`:
+```bash
+# Copy template config
+cp api/config.php.example api/config.php
 
+# Edit konfigurasi
+nano api/config.php
+```
+
+**Ubah bagian ini:**
 ```php
-// Ganti dengan kredensial database Anda
 define('DB_HOST', 'localhost');
 define('DB_NAME', 'linkpendek_db');
 define('DB_USER', 'root');
-define('DB_PASS', 'YOUR_PASSWORD_HERE');  // ⚠️ GANTI INI
-
-// Ganti dengan domain Anda
+define('DB_PASS', 'YOUR_PASSWORD');  // ⚠️ GANTI
 define('APP_URL', 'http://localhost:8000');
-define('SHORT_DOMAIN', 'localhost:8000');
-
-// Generate random string untuk security
-define('APP_SECRET', 'generate-random-string-here');
+define('SHORT_DOMAIN', 'lnk.pd');
+define('APP_SECRET', 'random-string-32-chars');
 ```
 
-### 3️⃣ Jalankan Server
+### 3️⃣ Install Frontend
 
 ```bash
-# Option 1: PHP Built-in Server (untuk development)
-php -S localhost:8000 -t public
+# Install dependencies
+npm install
 
-# Option 2: XAMPP/WAMP
-# Copy project ke htdocs, lalu akses http://localhost/linkpendek
-
-# Option 3: Laravel Herd / Valet (Mac)
-herd link linkpendek
+# Jalankan development server
+npm run dev
 ```
 
-### 4️⃣ Test API
-
-```bash
-# Test register
-curl -X POST http://localhost:8000/api/auth.php?action=register \
-  -H "Content-Type: application/json" \
-  -d '{
-    "name": "Test User",
-    "email": "test@example.com",
-    "password": "password123",
-    "confirmPassword": "password123"
-  }'
-
-# Test shorten URL
-curl -X POST http://localhost:8000/api/urls.php?action=shorten \
-  -H "Content-Type: application/json" \
-  -H "Authorization: Bearer YOUR_TOKEN" \
-  -d '{
-    "url": "https://www.google.com/search?q=url+shortener"
-  }'
-```
-
-### 5️⃣ Akses Aplikasi
-
-- **Frontend**: http://localhost:8000/
-- **API Docs**: http://localhost:8000/api/
-- **phpMyAdmin**: http://localhost/phpmyadmin (jika pakai XAMPP)
-
----
-
-## 📁 Struktur Folder
+### 4️⃣ Akses Aplikasi
 
 ```
-linkpendek/
-├── api/                    # Backend PHP API
-│   ├── config.php         # Konfigurasi database & app
-│   ├── auth.php           # API register/login
-│   ├── urls.php           # API URL shortener
-│   └── payment.php        # API pembayaran
-├── database/              # Database files
-│   └── schema.sql         # SQL schema lengkap
-├── public/                # Frontend & public files
-│   ├── .htaccess         # URL routing
-│   ├── index.html        # Frontend React (build)
-│   └── assets/           # CSS, JS, images
-├── src/                   # Source code React
-│   ├── App.tsx           # Main component
-│   ├── i18n.ts           # Translations ID/EN
-│   └── index.css         # Styles
-├── DOKUMENTASI_SETUP.md   # Panduan lengkap
-└── README.md             # File ini
+Frontend: http://localhost:5173
+API:      http://localhost:8000/api/
 ```
 
 ---
 
-## 🔧 Fitur Utama
+## 🔑 AKUN DEFAULT
+
+```
+Email:    admin@linkpendek.id
+Password: admin123
+Plan:     business
+```
+
+⚠️ **Ganti password setelah login pertama!**
+
+---
+
+## 📊 FITUR
 
 ### ✅ Gratis (Free Plan)
 - 50 link per bulan
@@ -132,7 +127,74 @@ linkpendek/
 
 ---
 
-## 🗄️ Database Schema
+## 🔌 API ENDPOINTS
+
+### Autentikasi
+```bash
+POST /api/auth.php?action=register
+POST /api/auth.php?action=login
+GET  /api/auth.php?action=profile
+```
+
+### URL Shortener
+```bash
+POST /api/urls.php?action=shorten
+GET  /api/urls.php?action=list
+POST /api/urls.php?action=delete
+GET  /api/urls.php?action=stats&code=xxx
+GET  /api/urls.php?action=redirect&code=xxx
+```
+
+### Pembayaran
+```bash
+GET  /api/payment.php?action=plans
+POST /api/payment.php?action=subscribe
+POST /api/payment.php?action=cancel
+GET  /api/payment.php?action=history
+```
+
+---
+
+## 📝 CONTOH API
+
+### Register User
+```bash
+curl -X POST http://localhost:8000/api/auth.php?action=register \
+  -H "Content-Type: application/json" \
+  -d '{
+    "name": "John Doe",
+    "email": "john@example.com",
+    "password": "password123",
+    "confirmPassword": "password123"
+  }'
+```
+
+### Persingkat URL
+```bash
+curl -X POST http://localhost:8000/api/urls.php?action=shorten \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer YOUR_TOKEN" \
+  -d '{
+    "url": "https://google.com",
+    "title": "Google"
+  }'
+```
+
+**Response:**
+```json
+{
+  "success": true,
+  "data": {
+    "short_code": "abc123",
+    "short_url": "lnk.pd/abc123",
+    "original_url": "https://google.com"
+  }
+}
+```
+
+---
+
+## 🗄️ STRUKTUR DATABASE
 
 ### Tabel Utama:
 1. **users** - Data pengguna
@@ -152,97 +214,131 @@ plans (1) ──< (N) payments
 
 ---
 
-## 🔐 Security Checklist
+## 🛠️ TECH STACK
 
-- [ ] Ganti `APP_SECRET` dengan random string
-- [ ] Ganti `JWT_SECRET` dengan random string
-- [ ] Set password database yang kuat
-- [ ] Enable HTTPS/SSL di production
-- [ ] Block access ke file `config.php`
-- [ ] Setup firewall untuk database
-- [ ] Backup database secara rutin
-- [ ] Update PHP dan MySQL ke versi terbaru
+- **Frontend:** React 18 + TypeScript + Vite
+- **Styling:** Tailwind CSS 4
+- **Backend:** PHP 7.4+ (Native)
+- **Database:** MySQL 5.7+ / MariaDB 10.3+
+- **Icons:** Font Awesome 6
+- **Language:** Indonesia & English
 
 ---
 
-## 📊 Monitoring & Maintenance
+## 📋 REQUIREMENTS
 
-### Cek database size:
-```sql
-SELECT 
-    table_name AS 'Table',
-    ROUND(((data_length + index_length) / 1024 / 1024), 2) AS 'Size (MB)'
-FROM information_schema.TABLES
-WHERE table_schema = 'linkpendek_db'
-ORDER BY (data_length + index_length) DESC;
-```
-
-### Cleanup expired links:
-```sql
--- Lihat berapa banyak link expired
-SELECT COUNT(*) FROM urls 
-WHERE expires_at < NOW() AND is_active = 1;
-
--- Deactivate expired links
-UPDATE urls SET is_active = 0 
-WHERE expires_at < NOW() AND is_active = 1;
-```
-
-### Backup database:
-```bash
-# Backup
-mysqldump -u root -p linkpendek_db > backup_$(date +%Y%m%d).sql
-
-# Restore
-mysql -u root -p linkpendek_db < backup_20240101.sql
-```
+- PHP 7.4+ dengan extensions:
+  - pdo_mysql
+  - mbstring
+  - json
+  - curl
+- MySQL 5.7+ atau MariaDB 10.3+
+- Node.js 16+ & npm
+- Apache/Nginx dengan mod_rewrite
 
 ---
 
-## 🌐 Deployment
+## 🚀 DEPLOYMENT
 
-### VPS (Ubuntu/Debian):
+### VPS (Ubuntu)
 ```bash
 # Install dependencies
 sudo apt update
-sudo apt install apache2 mysql-server php php-mysql php-mbstring php-curl
+sudo apt install apache2 mysql-server php php-mysql php-mbstring
 
 # Setup database
-sudo mysql -u root -p < database/schema.sql
+mysql -u root -p < database/schema.sql
 
 # Copy files
 sudo cp -r . /var/www/linkpendek/
-sudo chown -R www-data:www-data /var/www/linkpendek/
+sudo chown -R www-www-data /var/www/linkpendek/
 
-# Enable Apache modules
+# Enable mod_rewrite
 sudo a2enmod rewrite
 sudo systemctl restart apache2
 ```
 
-### Docker (Optional):
-```dockerfile
-# Dockerfile
-FROM php:8.1-apache
-RUN docker-php-ext-install pdo_mysql
-COPY . /var/www/html/
-EXPOSE 80
+### Docker
+```bash
+# Build image
+docker build -t linkpendek .
+
+# Run container
+docker run -p 8000:80 linkpendek
 ```
 
 ---
 
-## 📞 Support & Resources
+## 🔒 SECURITY
 
-- 📖 Dokumentasi Lengkap: [DOKUMENTASI_SETUP.md](DOKUMENTASI_SETUP.md)
-- 🐛 Bug Report: GitHub Issues
-- 💡 Feature Request: GitHub Discussions
-- 📧 Email: support@linkpendek.id
+- [x] Password hashing (bcrypt)
+- [x] SQL injection prevention (prepared statements)
+- [x] XSS protection
+- [x] CSRF protection
+- [x] Rate limiting
+- [x] HTTPS recommended
+- [x] Input validation
+- [x] Output sanitization
 
 ---
 
-## 📄 License
+## 📚 DOKUMENTASI LENGKAP
+
+- **Setup Guide:** `DOKUMENTASI_SETUP.md`
+- **Database Structure:** `DATABASE_STRUCTURE.md`
+- **Download Guide:** `CARA_DOWNLOAD.md`
+
+---
+
+## 🐛 TROUBLESHOOTING
+
+### Error: "Koneksi database gagal"
+```bash
+# Cek MySQL service
+sudo systemctl status mysql
+
+# Verifikasi kredensial di api/config.php
+```
+
+### Error: "404 Not Found"
+```bash
+# Enable mod_rewrite
+sudo a2enmod rewrite
+sudo systemctl restart apache2
+
+# Cek .htaccess ada di public/
+```
+
+### Error: "Table doesn't exist"
+```bash
+# Import ulang schema
+mysql -u root -p linkpendek_db < database/schema.sql
+```
+
+---
+
+## 📞 SUPPORT
+
+- 📧 Email: support@linkpendek.id
+- 💬 WhatsApp: +62 812-3456-7890
+- 📖 Docs: https://docs.linkpendek.id
+
+---
+
+## 📄 LICENSE
 
 MIT License - Bebas digunakan untuk personal dan komersial.
 
 ---
 
-**Made with ❤️ in Indonesia**
+## 🎉 CREDITS
+
+Dibuat dengan ❤️ di Indonesia
+
+**Version:** 1.0.0  
+**Last Updated:** 2024  
+**Author:** LinkPendek Team
+
+---
+
+**Happy Shortening! 🔗✨**

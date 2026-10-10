@@ -1,7 +1,18 @@
 <?php
 /**
- * API Pembayaran & Langganan
+ * =====================================================
+ * LINKPENDEK URL SHORTENER - API Pembayaran & Langganan
+ * =====================================================
+ * File: payment.php
  * Endpoint: POST /api/payment.php
+ * 
+ * Actions:
+ * - plans: Get daftar paket
+ * - subscribe: Subscribe ke paket
+ * - cancel: Cancel subscription
+ * - history: Get riwayat pembayaran
+ * - webhook: Handle webhook dari payment gateway
+ * =====================================================
  */
 
 require_once __DIR__ . '/config.php';

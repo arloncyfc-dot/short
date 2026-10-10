@@ -1,7 +1,17 @@
 <?php
 /**
- * API Autentikasi - Register & Login
+ * =====================================================
+ * LINKPENDEK URL SHORTENER - API Autentikasi
+ * =====================================================
+ * File: auth.php
  * Endpoint: POST /api/auth.php
+ * 
+ * Actions:
+ * - register: Daftar user baru
+ * - login: Login user
+ * - profile: Get profile user (butuh token)
+ * - logout: Logout user
+ * =====================================================
  */
 
 require_once __DIR__ . '/config.php';
@@ -76,7 +86,7 @@ function register() {
     
     $userId = $db->lastInsertId();
     
-    // Generate token sederhana (session-based)
+    // Generate token
     $token = base64_encode($userId . ':' . time() . ':' . APP_SECRET);
     
     jsonResponse([
@@ -185,7 +195,7 @@ function getProfile() {
 }
 
 /**
- * Logout (invalidate token - client side)
+ * Logout
  */
 function logout() {
     jsonResponse(['success' => true, 'message' => 'Logout berhasil']);
